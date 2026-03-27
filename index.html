@@ -4,7 +4,286 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>I am Wukung Card Game</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a0a2e;
+      color: #f0e6ff;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #f5c842;
+      text-shadow: 0 0 12px #f5c842aa;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+
+    #status-bar {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 20px;
+      font-size: 1rem;
+    }
+
+    .stat { color: #ccc; }
+    .stat span { color: #f5c842; font-weight: bold; }
+
+    #battlefield {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      min-height: 220px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      width: 130px;
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+
+    .card:hover { transform: translateY(-8px); box-shadow: 0 8px 24px #f5c84266; }
+
+    .card.hand-card {
+      background: linear-gradient(145deg, #2e1a5e, #4b2d8a);
+      border: 2px solid #7c5cbf;
+    }
+
+    .card.played {
+      background: linear-gradient(145deg, #5e1a1a, #8a2d2d);
+      border: 2px solid #bf5c5c;
+      cursor: default;
+      transform: none;
+    }
+
+    .card.played:hover { transform: none; box-shadow: none; }
+
+    .card-emoji { font-size: 2.4rem; }
+    .card-name { font-size: 0.75rem; font-weight: bold; color: #f5c842; text-align: center; }
+    .card-type { font-size: 0.65rem; color: #aaa; }
+
+    .card-stats {
+      display: flex;
+      gap: 8px;
+      font-size: 0.7rem;
+      margin-top: 4px;
+    }
+
+    .atk { color: #ff6b6b; }
+    .def { color: #6bcbff; }
+    .cost { color: #a8ff6b; }
+
+    .card-desc { font-size: 0.6rem; color: #ccc; text-align: center; margin-top: 4px; }
+
+    #hand-area {
+      margin-bottom: 16px;
+    }
+
+    #hand-area h2, #battlefield-label {
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-bottom: 8px;
+      text-align: center;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    #hand { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+    #controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    button {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-weight: bold;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.4; cursor: default; }
+
+    #btn-draw { background: #f5c842; color: #1a0a2e; }
+    #btn-end  { background: #7c5cbf; color: #fff; }
+    #btn-reset{ background: #444; color: #fff; }
+
+    #log {
+      width: 100%;
+      max-width: 600px;
+      background: #12082a;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      color: #bbb;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    #log p { margin-bottom: 4px; }
+    #log p.highlight { color: #f5c842; }
+  </style>
 </head>
 <body>
+
+  <h1>⚡ I am Wukung ⚡</h1>
+
+  <div id="status-bar">
+    <div class="stat">Turn: <span id="turn-num">1</span></div>
+    <div class="stat">Mana: <span id="mana-cur">3</span> / <span id="mana-max">3</span></div>
+    <div class="stat">Deck: <span id="deck-count">0</span></div>
+    <div class="stat">HP: <span id="hp">20</span></div>
+  </div>
+
+  <div id="battlefield-label">— Battlefield —</div>
+  <div id="battlefield"></div>
+
+  <div id="hand-area">
+    <h2>Your Hand</h2>
+    <div id="hand"></div>
+  </div>
+
+  <div id="controls">
+    <button id="btn-draw">Draw Card</button>
+    <button id="btn-end">End Turn</button>
+    <button id="btn-reset">Restart</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script>
+    const CARDS = [
+      { name: "Sun Wukong",    emoji: "🐵", type: "Warrior",  atk: 5, def: 3, cost: 4, desc: "The Great Sage — strikes with fury." },
+      { name: "Clone Strike",  emoji: "✨", type: "Spell",    atk: 3, def: 0, cost: 2, desc: "Summon a clone to attack." },
+      { name: "Iron Staff",    emoji: "🪄", type: "Weapon",   atk: 4, def: 1, cost: 3, desc: "Ruyi Jingu Bang — grows to any size." },
+      { name: "Golden Band",   emoji: "👑", type: "Relic",    atk: 0, def: 4, cost: 2, desc: "Headband of discipline — +4 DEF." },
+      { name: "Pigsy",         emoji: "🐷", type: "Ally",     atk: 2, def: 4, cost: 3, desc: "Zhu Bajie — sturdy companion." },
+      { name: "Sandy",         emoji: "🪨", type: "Ally",     atk: 3, def: 3, cost: 3, desc: "Sha Wujing — balanced fighter." },
+      { name: "Fire Eyes",     emoji: "🔥", type: "Spell",    atk: 6, def: 0, cost: 5, desc: "See through all illusions." },
+      { name: "Somersault",    emoji: "💨", type: "Skill",    atk: 0, def: 2, cost: 1, desc: "Travel 108,000 li in one flip." },
+      { name: "Demon King",    emoji: "👿", type: "Enemy",    atk: 6, def: 5, cost: 6, desc: "A captured demon turned ally." },
+      { name: "Immortal Peach",emoji: "🍑", type: "Item",     atk: 0, def: 3, cost: 2, desc: "Restore vitality. +3 HP." },
+    ];
+
+    let deck = [], hand = [], battlefield = [];
+    let mana, manaMax, turn, hp;
+
+    function buildDeck() {
+      deck = [];
+      for (let i = 0; i < 3; i++) deck.push(...CARDS.map(c => ({ ...c })));
+      deck.sort(() => Math.random() - 0.5);
+    }
+
+    function init() {
+      buildDeck();
+      hand = []; battlefield = [];
+      mana = 3; manaMax = 3; turn = 1; hp = 20;
+      for (let i = 0; i < 4; i++) drawCard(true);
+      render();
+      logMsg("Game started! Draw cards and play them on the battlefield.", true);
+    }
+
+    function drawCard(silent = false) {
+      if (deck.length === 0) { logMsg("Deck is empty!"); return; }
+      if (hand.length >= 7) { logMsg("Hand is full! (max 7)"); return; }
+      const card = deck.pop();
+      hand.push(card);
+      if (!silent) logMsg(`Drew: ${card.emoji} ${card.name}`);
+      render();
+    }
+
+    function playCard(index) {
+      const card = hand[index];
+      if (mana < card.cost) { logMsg(`Not enough mana to play ${card.name}! (need ${card.cost})`); return; }
+      mana -= card.cost;
+      hand.splice(index, 1);
+      battlefield.push(card);
+      if (card.type === "Item" && card.name === "Immortal Peach") { hp = Math.min(hp + 3, 30); }
+      logMsg(`Played: ${card.emoji} ${card.name} (ATK ${card.atk} / DEF ${card.def})`, true);
+      render();
+    }
+
+    function endTurn() {
+      turn++;
+      manaMax = Math.min(manaMax + 1, 10);
+      mana = manaMax;
+      battlefield = [];
+      drawCard(true);
+      logMsg(`— Turn ${turn} begins. Mana restored to ${mana}. —`, true);
+      render();
+    }
+
+    function logMsg(msg, highlight = false) {
+      const log = document.getElementById("log");
+      const p = document.createElement("p");
+      if (highlight) p.className = "highlight";
+      p.textContent = msg;
+      log.prepend(p);
+    }
+
+    function render() {
+      document.getElementById("turn-num").textContent = turn;
+      document.getElementById("mana-cur").textContent = mana;
+      document.getElementById("mana-max").textContent = manaMax;
+      document.getElementById("deck-count").textContent = deck.length;
+      document.getElementById("hp").textContent = hp;
+
+      const handEl = document.getElementById("hand");
+      handEl.innerHTML = "";
+      hand.forEach((card, i) => {
+        handEl.appendChild(makeCardEl(card, i, false));
+      });
+
+      const bfEl = document.getElementById("battlefield");
+      bfEl.innerHTML = "";
+      battlefield.forEach(card => bfEl.appendChild(makeCardEl(card, -1, true)));
+    }
+
+    function makeCardEl(card, index, played) {
+      const el = document.createElement("div");
+      el.className = "card " + (played ? "played" : "hand-card");
+      el.innerHTML = `
+        <div class="card-emoji">${card.emoji}</div>
+        <div class="card-name">${card.name}</div>
+        <div class="card-type">${card.type}</div>
+        <div class="card-stats">
+          <span class="atk">ATK ${card.atk}</span>
+          <span class="def">DEF ${card.def}</span>
+          <span class="cost">💎${card.cost}</span>
+        </div>
+        <div class="card-desc">${card.desc}</div>
+      `;
+      if (!played) el.addEventListener("click", () => playCard(index));
+      return el;
+    }
+
+    document.getElementById("btn-draw").addEventListener("click", () => drawCard());
+    document.getElementById("btn-end").addEventListener("click", endTurn);
+    document.getElementById("btn-reset").addEventListener("click", init);
+
+    init();
+  </script>
+
 </body>
 </html>
