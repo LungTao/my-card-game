@@ -5,284 +5,589 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>I am Wukung Card Game</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #f5c842;
+      --purple: #7c5cbf;
+      --dark: #1a0a2e;
+      --darker: #12082a;
+      --red: #e05555;
+      --green: #55c77a;
+      --blue: #55aaff;
+    }
 
     body {
-      background: #1a0a2e;
+      background: var(--dark);
       color: #f0e6ff;
       font-family: 'Segoe UI', sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px;
+      padding: 16px;
+      gap: 12px;
     }
 
     h1 {
-      font-size: 2rem;
-      color: #f5c842;
-      text-shadow: 0 0 12px #f5c842aa;
-      margin-bottom: 8px;
-      letter-spacing: 2px;
+      font-size: 1.8rem;
+      color: var(--gold);
+      text-shadow: 0 0 14px #f5c842bb;
+      letter-spacing: 3px;
     }
 
-    #status-bar {
+    /* ── ARENA ── */
+    #arena {
       display: flex;
-      gap: 32px;
-      margin-bottom: 20px;
-      font-size: 1rem;
-    }
-
-    .stat { color: #ccc; }
-    .stat span { color: #f5c842; font-weight: bold; }
-
-    #battlefield {
-      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 720px;
+      background: #12082a99;
+      border: 1px solid #3a2060;
+      border-radius: 16px;
+      padding: 16px 24px;
       gap: 16px;
-      justify-content: center;
-      min-height: 220px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
     }
 
-    .card {
-      width: 130px;
-      border-radius: 12px;
-      padding: 12px;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+    .fighter {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      user-select: none;
+      min-width: 140px;
     }
 
-    .card:hover { transform: translateY(-8px); box-shadow: 0 8px 24px #f5c84266; }
+    .fighter-emoji { font-size: 3.2rem; transition: transform 0.15s; }
+    .fighter-emoji.shake {
+      animation: shake 0.3s ease;
+    }
 
-    .card.hand-card {
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    .fighter-name { font-size: 0.85rem; font-weight: bold; color: var(--gold); }
+
+    .hp-bar-wrap {
+      width: 130px;
+      height: 14px;
+      background: #2a1a4a;
+      border-radius: 7px;
+      overflow: hidden;
+      border: 1px solid #5a3a80;
+    }
+
+    .hp-bar {
+      height: 100%;
+      border-radius: 7px;
+      transition: width 0.4s ease;
+    }
+
+    .hp-bar.player { background: var(--green); }
+    .hp-bar.enemy  { background: var(--red); }
+
+    .hp-text { font-size: 0.75rem; color: #ccc; }
+
+    .shield-display {
+      font-size: 0.75rem;
+      color: var(--blue);
+    }
+
+    /* VS badge */
+    #vs-badge {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #aaa;
+      text-shadow: 0 0 8px #ffffff44;
+    }
+
+    /* ── TURN / MANA ── */
+    #info-bar {
+      display: flex;
+      gap: 24px;
+      font-size: 0.85rem;
+    }
+
+    .info-stat { color: #bbb; }
+    .info-stat span { color: var(--gold); font-weight: bold; }
+
+    /* ── BATTLE ZONE ── */
+    #battle-zone {
+      width: 100%;
+      max-width: 720px;
+    }
+
+    .zone-label {
+      font-size: 0.75rem;
+      color: #777;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    #played-cards {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      min-height: 80px;
+      background: #0e061f;
+      border: 1px dashed #3a2060;
+      border-radius: 12px;
+      padding: 10px;
+      align-items: center;
+    }
+
+    .played-mini {
+      background: linear-gradient(145deg, #5e1a1a, #8a2d2d);
+      border: 1px solid #bf5c5c;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── HAND ── */
+    #hand-section { width: 100%; max-width: 720px; }
+    #hand {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .card {
+      width: 118px;
+      border-radius: 12px;
+      padding: 10px;
+      cursor: pointer;
+      transition: transform 0.18s, box-shadow 0.18s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      user-select: none;
       background: linear-gradient(145deg, #2e1a5e, #4b2d8a);
       border: 2px solid #7c5cbf;
+      position: relative;
     }
 
-    .card.played {
-      background: linear-gradient(145deg, #5e1a1a, #8a2d2d);
-      border: 2px solid #bf5c5c;
-      cursor: default;
-      transform: none;
+    .card:hover { transform: translateY(-10px); box-shadow: 0 10px 28px #f5c84255; }
+    .card.disabled { opacity: 0.4; cursor: not-allowed; }
+    .card.disabled:hover { transform: none; box-shadow: none; }
+
+    .card-cost-badge {
+      position: absolute;
+      top: 6px; right: 6px;
+      background: #1a0a2e;
+      border: 1px solid #a8ff6b;
+      color: #a8ff6b;
+      font-size: 0.65rem;
+      font-weight: bold;
+      border-radius: 50%;
+      width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
     }
 
-    .card.played:hover { transform: none; box-shadow: none; }
-
-    .card-emoji { font-size: 2.4rem; }
-    .card-name { font-size: 0.75rem; font-weight: bold; color: #f5c842; text-align: center; }
-    .card-type { font-size: 0.65rem; color: #aaa; }
-
-    .card-stats {
-      display: flex;
-      gap: 8px;
-      font-size: 0.7rem;
-      margin-top: 4px;
-    }
-
+    .card-emoji  { font-size: 2rem; }
+    .card-name   { font-size: 0.7rem; font-weight: bold; color: var(--gold); text-align: center; }
+    .card-type   { font-size: 0.6rem; color: #aaa; }
+    .card-stats  { display: flex; gap: 6px; font-size: 0.65rem; margin-top: 2px; }
     .atk { color: #ff6b6b; }
     .def { color: #6bcbff; }
-    .cost { color: #a8ff6b; }
+    .card-desc   { font-size: 0.55rem; color: #ccc; text-align: center; margin-top: 2px; }
 
-    .card-desc { font-size: 0.6rem; color: #ccc; text-align: center; margin-top: 4px; }
-
-    #hand-area {
-      margin-bottom: 16px;
-    }
-
-    #hand-area h2, #battlefield-label {
-      font-size: 0.85rem;
-      color: #aaa;
-      margin-bottom: 8px;
-      text-align: center;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    #hand { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-
-    #controls {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
+    /* ── CONTROLS ── */
+    #controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
     button {
-      padding: 10px 24px;
+      padding: 9px 22px;
       border: none;
       border-radius: 8px;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       cursor: pointer;
       font-weight: bold;
       transition: opacity 0.2s, transform 0.1s;
     }
 
-    button:active { transform: scale(0.97); }
-    button:disabled { opacity: 0.4; cursor: default; }
+    button:active { transform: scale(0.96); }
+    button:disabled { opacity: 0.35; cursor: default; }
 
-    #btn-draw { background: #f5c842; color: #1a0a2e; }
-    #btn-end  { background: #7c5cbf; color: #fff; }
-    #btn-reset{ background: #444; color: #fff; }
+    #btn-draw  { background: var(--gold); color: var(--dark); }
+    #btn-end   { background: var(--purple); color: #fff; }
+    #btn-attack{ background: var(--red); color: #fff; }
+    #btn-reset { background: #333; color: #fff; }
 
+    /* ── LOG ── */
     #log {
       width: 100%;
-      max-width: 600px;
-      background: #12082a;
+      max-width: 720px;
+      background: var(--darker);
       border-radius: 10px;
-      padding: 12px 16px;
-      font-size: 0.8rem;
-      color: #bbb;
-      max-height: 120px;
+      padding: 10px 14px;
+      font-size: 0.78rem;
+      color: #aaa;
+      max-height: 100px;
       overflow-y: auto;
     }
 
-    #log p { margin-bottom: 4px; }
-    #log p.highlight { color: #f5c842; }
+    #log p { margin-bottom: 3px; }
+    #log .l-gold   { color: var(--gold); }
+    #log .l-red    { color: #ff7777; }
+    #log .l-green  { color: #77ff99; }
+    #log .l-blue   { color: #77ccff; }
+
+    /* ── OVERLAY ── */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000000cc;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    #overlay.show { display: flex; }
+
+    #overlay-box {
+      background: var(--darker);
+      border: 2px solid var(--gold);
+      border-radius: 20px;
+      padding: 40px 50px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    #overlay-title { font-size: 2.2rem; color: var(--gold); }
+    #overlay-msg   { font-size: 1rem; color: #ccc; }
+    #overlay-btn   { background: var(--gold); color: var(--dark); padding: 12px 32px;
+                     border-radius: 10px; font-size: 1rem; border: none; cursor: pointer; font-weight: bold; }
   </style>
 </head>
 <body>
 
   <h1>⚡ I am Wukung ⚡</h1>
 
-  <div id="status-bar">
-    <div class="stat">Turn: <span id="turn-num">1</span></div>
-    <div class="stat">Mana: <span id="mana-cur">3</span> / <span id="mana-max">3</span></div>
-    <div class="stat">Deck: <span id="deck-count">0</span></div>
-    <div class="stat">HP: <span id="hp">20</span></div>
+  <!-- ARENA -->
+  <div id="arena">
+    <div class="fighter" id="player-side">
+      <div class="fighter-emoji" id="player-emoji">🐵</div>
+      <div class="fighter-name">Sun Wukong</div>
+      <div class="hp-bar-wrap"><div class="hp-bar player" id="player-hp-bar"></div></div>
+      <div class="hp-text">HP: <span id="player-hp">30</span> / 30</div>
+      <div class="shield-display">🛡 Shield: <span id="player-shield">0</span></div>
+    </div>
+
+    <div id="vs-badge">VS</div>
+
+    <div class="fighter" id="enemy-side">
+      <div class="fighter-emoji" id="enemy-emoji">👹</div>
+      <div class="fighter-name" id="enemy-name">Bull Demon King</div>
+      <div class="hp-bar-wrap"><div class="hp-bar enemy" id="enemy-hp-bar"></div></div>
+      <div class="hp-text">HP: <span id="enemy-hp">25</span> / <span id="enemy-max-hp">25</span></div>
+      <div class="shield-display" style="color:#ff9966;">⚔ ATK: <span id="enemy-atk">6</span></div>
+    </div>
   </div>
 
-  <div id="battlefield-label">— Battlefield —</div>
-  <div id="battlefield"></div>
+  <!-- INFO BAR -->
+  <div id="info-bar">
+    <div class="info-stat">Turn: <span id="turn-num">1</span></div>
+    <div class="info-stat">Mana: <span id="mana-cur">3</span> / <span id="mana-max">3</span></div>
+    <div class="info-stat">Deck: <span id="deck-count">0</span></div>
+    <div class="info-stat">Stage: <span id="stage-num">1</span> / 3</div>
+  </div>
 
-  <div id="hand-area">
-    <h2>Your Hand</h2>
+  <!-- PLAYED ZONE -->
+  <div id="battle-zone">
+    <div class="zone-label">— Cards Played This Turn —</div>
+    <div id="played-cards"></div>
+  </div>
+
+  <!-- HAND -->
+  <div id="hand-section">
+    <div class="zone-label">— Your Hand —</div>
     <div id="hand"></div>
   </div>
 
+  <!-- CONTROLS -->
   <div id="controls">
     <button id="btn-draw">Draw Card</button>
+    <button id="btn-attack">Attack Enemy!</button>
     <button id="btn-end">End Turn</button>
     <button id="btn-reset">Restart</button>
   </div>
 
+  <!-- LOG -->
   <div id="log"></div>
 
+  <!-- OVERLAY -->
+  <div id="overlay">
+    <div id="overlay-box">
+      <div id="overlay-title">⚡ Victory! ⚡</div>
+      <div id="overlay-msg">You defeated all demons!</div>
+      <button id="overlay-btn" onclick="nextStageOrRestart()">Continue</button>
+    </div>
+  </div>
+
   <script>
-    const CARDS = [
-      { name: "Sun Wukong",    emoji: "🐵", type: "Warrior",  atk: 5, def: 3, cost: 4, desc: "The Great Sage — strikes with fury." },
-      { name: "Clone Strike",  emoji: "✨", type: "Spell",    atk: 3, def: 0, cost: 2, desc: "Summon a clone to attack." },
-      { name: "Iron Staff",    emoji: "🪄", type: "Weapon",   atk: 4, def: 1, cost: 3, desc: "Ruyi Jingu Bang — grows to any size." },
-      { name: "Golden Band",   emoji: "👑", type: "Relic",    atk: 0, def: 4, cost: 2, desc: "Headband of discipline — +4 DEF." },
-      { name: "Pigsy",         emoji: "🐷", type: "Ally",     atk: 2, def: 4, cost: 3, desc: "Zhu Bajie — sturdy companion." },
-      { name: "Sandy",         emoji: "🪨", type: "Ally",     atk: 3, def: 3, cost: 3, desc: "Sha Wujing — balanced fighter." },
-      { name: "Fire Eyes",     emoji: "🔥", type: "Spell",    atk: 6, def: 0, cost: 5, desc: "See through all illusions." },
-      { name: "Somersault",    emoji: "💨", type: "Skill",    atk: 0, def: 2, cost: 1, desc: "Travel 108,000 li in one flip." },
-      { name: "Demon King",    emoji: "👿", type: "Enemy",    atk: 6, def: 5, cost: 6, desc: "A captured demon turned ally." },
-      { name: "Immortal Peach",emoji: "🍑", type: "Item",     atk: 0, def: 3, cost: 2, desc: "Restore vitality. +3 HP." },
-    ];
+  // ── DATA ──────────────────────────────────────────────
+  const CARD_DEFS = [
+    { name:"Sun Wukong",     emoji:"🐵", type:"Warrior", atk:5, def:3, cost:4, desc:"Great Sage — strikes with fury." },
+    { name:"Clone Strike",   emoji:"✨", type:"Spell",   atk:3, def:0, cost:2, desc:"Summon clones to swarm the foe." },
+    { name:"Iron Staff",     emoji:"🪄", type:"Weapon",  atk:4, def:1, cost:3, desc:"Ruyi Jingu Bang — any size." },
+    { name:"Golden Band",    emoji:"👑", type:"Relic",   atk:0, def:5, cost:2, desc:"Headband of discipline. +5 Shield." },
+    { name:"Pigsy",          emoji:"🐷", type:"Ally",    atk:2, def:4, cost:3, desc:"Zhu Bajie — sturdy companion." },
+    { name:"Sandy",          emoji:"🪨", type:"Ally",    atk:3, def:3, cost:3, desc:"Sha Wujing — balanced fighter." },
+    { name:"Fire Eyes",      emoji:"🔥", type:"Spell",   atk:7, def:0, cost:5, desc:"See through all illusions." },
+    { name:"Somersault",     emoji:"💨", type:"Skill",   atk:0, def:2, cost:1, desc:"108,000 li — evade all attacks." },
+    { name:"Immortal Peach", emoji:"🍑", type:"Item",    atk:0, def:0, cost:2, desc:"Heavenly fruit. Restore 5 HP." },
+    { name:"Thunder Palm",   emoji:"⚡", type:"Spell",   atk:5, def:1, cost:4, desc:"Divine thunder crashes down." },
+    { name:"Monkey Army",    emoji:"🐒", type:"Warrior", atk:3, def:2, cost:3, desc:"500 monkey soldiers charge!" },
+    { name:"Heaven's Gate",  emoji:"🌸", type:"Relic",   atk:1, def:4, cost:3, desc:"Gate of heaven blocks all evil." },
+  ];
 
-    let deck = [], hand = [], battlefield = [];
-    let mana, manaMax, turn, hp;
+  const ENEMIES = [
+    { name:"Bull Demon King", emoji:"🐂", hp:25, atk:6,  maxHp:25 },
+    { name:"White Bone Demon",emoji:"💀", hp:35, atk:8,  maxHp:35 },
+    { name:"Jade Emperor",    emoji:"👼", hp:50, atk:10, maxHp:50 },
+  ];
 
-    function buildDeck() {
-      deck = [];
-      for (let i = 0; i < 3; i++) deck.push(...CARDS.map(c => ({ ...c })));
-      deck.sort(() => Math.random() - 0.5);
+  // ── STATE ─────────────────────────────────────────────
+  let deck, hand, playedThisTurn;
+  let playerHp, playerMaxHp, playerShield;
+  let mana, manaMax, turn, stage;
+  let enemy;
+  let gameOver = false;
+
+  // ── INIT ──────────────────────────────────────────────
+  function buildDeck() {
+    deck = [];
+    for (let i = 0; i < 3; i++) deck.push(...CARD_DEFS.map(c => ({...c})));
+    deck.sort(() => Math.random() - 0.5);
+  }
+
+  function init() {
+    stage = 0;
+    playerHp = 30; playerMaxHp = 30;
+    buildDeck();
+    startStage();
+  }
+
+  function startStage() {
+    enemy = { ...ENEMIES[stage] };
+    hand = []; playedThisTurn = [];
+    playerShield = 0;
+    mana = 3 + stage; manaMax = 3 + stage;
+    turn = 1; gameOver = false;
+    for (let i = 0; i < 4; i++) drawCard(true);
+    render();
+    log(`⚔ Stage ${stage+1}: ${enemy.emoji} ${enemy.name} appears!`, 'l-red');
+    log(`Draw cards and attack to defeat the demon!`, 'l-gold');
+  }
+
+  // ── DRAW ──────────────────────────────────────────────
+  function drawCard(silent = false) {
+    if (deck.length === 0) { if(!silent) log("Deck is empty!"); return; }
+    if (hand.length >= 7)  { if(!silent) log("Hand full! (max 7)"); return; }
+    const card = deck.pop();
+    hand.push(card);
+    if (!silent) log(`Drew ${card.emoji} ${card.name}`, 'l-blue');
+    render();
+  }
+
+  // ── PLAY CARD ─────────────────────────────────────────
+  function playCard(idx) {
+    if (gameOver) return;
+    const card = hand[idx];
+    if (mana < card.cost) { log(`Not enough mana! Need ${card.cost}`, 'l-red'); return; }
+    mana -= card.cost;
+    hand.splice(idx, 1);
+    playedThisTurn.push(card);
+    // Item: heal
+    if (card.name === "Immortal Peach") {
+      playerHp = Math.min(playerHp + 5, playerMaxHp);
+      log(`${card.emoji} ${card.name} — healed 5 HP! (HP: ${playerHp})`, 'l-green');
+    } else {
+      log(`Played ${card.emoji} ${card.name} — ATK ${card.atk} / Shield ${card.def}`, 'l-gold');
+    }
+    render();
+  }
+
+  // ── ATTACK ────────────────────────────────────────────
+  function attackEnemy() {
+    if (gameOver) return;
+    if (playedThisTurn.length === 0) { log("Play some cards first!", 'l-red'); return; }
+
+    let totalAtk = playedThisTurn.reduce((s, c) => s + c.atk, 0);
+    let totalShield = playedThisTurn.reduce((s, c) => s + c.def, 0);
+    playerShield += totalShield;
+
+    enemy.hp = Math.max(0, enemy.hp - totalAtk);
+    log(`You unleash ${totalAtk} ATK on ${enemy.name}! (+${totalShield} Shield)`, 'l-gold');
+    shakeEl('enemy-emoji');
+
+    render();
+
+    if (enemy.hp <= 0) {
+      enemyDefeated();
+      return;
     }
 
-    function init() {
-      buildDeck();
-      hand = []; battlefield = [];
-      mana = 3; manaMax = 3; turn = 1; hp = 20;
-      for (let i = 0; i < 4; i++) drawCard(true);
-      render();
-      logMsg("Game started! Draw cards and play them on the battlefield.", true);
-    }
+    // Enemy counter-attack after short delay
+    setTimeout(enemyAttack, 600);
+  }
 
-    function drawCard(silent = false) {
-      if (deck.length === 0) { logMsg("Deck is empty!"); return; }
-      if (hand.length >= 7) { logMsg("Hand is full! (max 7)"); return; }
-      const card = deck.pop();
-      hand.push(card);
-      if (!silent) logMsg(`Drew: ${card.emoji} ${card.name}`);
-      render();
-    }
+  // ── ENEMY ATTACK ──────────────────────────────────────
+  function enemyAttack() {
+    const rawDmg = enemy.atk + Math.floor(Math.random() * 3);
+    const blocked = Math.min(playerShield, rawDmg);
+    const dmg = rawDmg - blocked;
+    playerShield = Math.max(0, playerShield - rawDmg);
+    playerHp = Math.max(0, playerHp - dmg);
 
-    function playCard(index) {
-      const card = hand[index];
-      if (mana < card.cost) { logMsg(`Not enough mana to play ${card.name}! (need ${card.cost})`); return; }
-      mana -= card.cost;
-      hand.splice(index, 1);
-      battlefield.push(card);
-      if (card.type === "Item" && card.name === "Immortal Peach") { hp = Math.min(hp + 3, 30); }
-      logMsg(`Played: ${card.emoji} ${card.name} (ATK ${card.atk} / DEF ${card.def})`, true);
-      render();
-    }
+    log(`${enemy.emoji} ${enemy.name} strikes for ${rawDmg}! (Blocked: ${blocked}, Damage: ${dmg})`, 'l-red');
+    shakeEl('player-emoji');
+    render();
 
-    function endTurn() {
-      turn++;
-      manaMax = Math.min(manaMax + 1, 10);
-      mana = manaMax;
-      battlefield = [];
-      drawCard(true);
-      logMsg(`— Turn ${turn} begins. Mana restored to ${mana}. —`, true);
-      render();
-    }
+    if (playerHp <= 0) showOverlay(false);
+  }
 
-    function logMsg(msg, highlight = false) {
-      const log = document.getElementById("log");
-      const p = document.createElement("p");
-      if (highlight) p.className = "highlight";
-      p.textContent = msg;
-      log.prepend(p);
-    }
+  // ── END TURN ──────────────────────────────────────────
+  function endTurn() {
+    if (gameOver) return;
+    playedThisTurn = [];
+    turn++;
+    manaMax = Math.min(manaMax + 1, 10);
+    mana = manaMax;
+    playerShield = 0;
+    drawCard(true);
+    log(`— Turn ${turn} — Mana: ${mana} —`, 'l-blue');
+    render();
+  }
 
-    function render() {
-      document.getElementById("turn-num").textContent = turn;
-      document.getElementById("mana-cur").textContent = mana;
-      document.getElementById("mana-max").textContent = manaMax;
-      document.getElementById("deck-count").textContent = deck.length;
-      document.getElementById("hp").textContent = hp;
+  // ── STAGE CLEAR / GAME OVER ───────────────────────────
+  function enemyDefeated() {
+    gameOver = true;
+    const last = stage === ENEMIES.length - 1;
+    document.getElementById('overlay-title').textContent = last ? "🏆 YOU WIN! 🏆" : `⚡ Stage ${stage+1} Clear! ⚡`;
+    document.getElementById('overlay-msg').textContent   = last
+      ? `The Jade Emperor bows! Wukong reigns supreme!`
+      : `${enemy.name} defeated! Prepare for the next demon…`;
+    document.getElementById('overlay-btn').textContent   = last ? "Play Again" : "Next Stage →";
+    document.getElementById('overlay').classList.add('show');
+    log(`${enemy.emoji} ${enemy.name} defeated!`, 'l-green');
+  }
 
-      const handEl = document.getElementById("hand");
-      handEl.innerHTML = "";
-      hand.forEach((card, i) => {
-        handEl.appendChild(makeCardEl(card, i, false));
-      });
+  function showOverlay(win) {
+    gameOver = true;
+    document.getElementById('overlay-title').textContent = "💀 Defeated 💀";
+    document.getElementById('overlay-msg').textContent   = "Wukong falls… but legends never die.";
+    document.getElementById('overlay-btn').textContent   = "Try Again";
+    document.getElementById('overlay').classList.add('show');
+  }
 
-      const bfEl = document.getElementById("battlefield");
-      bfEl.innerHTML = "";
-      battlefield.forEach(card => bfEl.appendChild(makeCardEl(card, -1, true)));
-    }
+  function nextStageOrRestart() {
+    document.getElementById('overlay').classList.remove('show');
+    stage++;
+    if (stage >= ENEMIES.length) { stage = 0; playerHp = 30; buildDeck(); }
+    if (stage === 0) { init(); } else { startStage(); }
+  }
 
-    function makeCardEl(card, index, played) {
-      const el = document.createElement("div");
-      el.className = "card " + (played ? "played" : "hand-card");
+  // ── HELPERS ───────────────────────────────────────────
+  function shakeEl(id) {
+    const el = document.getElementById(id);
+    el.classList.remove('shake');
+    void el.offsetWidth;
+    el.classList.add('shake');
+  }
+
+  function log(msg, cls = '') {
+    const logEl = document.getElementById('log');
+    const p = document.createElement('p');
+    if (cls) p.className = cls;
+    p.textContent = msg;
+    logEl.prepend(p);
+  }
+
+  // ── RENDER ────────────────────────────────────────────
+  function render() {
+    // Player
+    document.getElementById('player-hp').textContent = playerHp;
+    document.getElementById('player-hp-bar').style.width = (playerHp / playerMaxHp * 100) + '%';
+    document.getElementById('player-shield').textContent = playerShield;
+
+    // Enemy
+    document.getElementById('enemy-name').textContent = enemy.name;
+    document.getElementById('enemy-emoji').textContent = enemy.emoji;
+    document.getElementById('enemy-hp').textContent = enemy.hp;
+    document.getElementById('enemy-max-hp').textContent = enemy.maxHp;
+    document.getElementById('enemy-hp-bar').style.width = (enemy.hp / enemy.maxHp * 100) + '%';
+    document.getElementById('enemy-atk').textContent = enemy.atk;
+
+    // Info
+    document.getElementById('turn-num').textContent = turn;
+    document.getElementById('mana-cur').textContent = mana;
+    document.getElementById('mana-max').textContent = manaMax;
+    document.getElementById('deck-count').textContent = deck.length;
+    document.getElementById('stage-num').textContent = stage + 1;
+
+    // Hand
+    const handEl = document.getElementById('hand');
+    handEl.innerHTML = '';
+    hand.forEach((card, i) => {
+      const el = document.createElement('div');
+      el.className = 'card' + (mana < card.cost ? ' disabled' : '');
       el.innerHTML = `
+        <div class="card-cost-badge">${card.cost}</div>
         <div class="card-emoji">${card.emoji}</div>
         <div class="card-name">${card.name}</div>
         <div class="card-type">${card.type}</div>
         <div class="card-stats">
-          <span class="atk">ATK ${card.atk}</span>
-          <span class="def">DEF ${card.def}</span>
-          <span class="cost">💎${card.cost}</span>
+          <span class="atk">⚔${card.atk}</span>
+          <span class="def">🛡${card.def}</span>
         </div>
         <div class="card-desc">${card.desc}</div>
       `;
-      if (!played) el.addEventListener("click", () => playCard(index));
-      return el;
+      if (mana >= card.cost && !gameOver) el.addEventListener('click', () => playCard(i));
+      handEl.appendChild(el);
+    });
+
+    // Played zone
+    const playedEl = document.getElementById('played-cards');
+    playedEl.innerHTML = '';
+    if (playedThisTurn.length === 0) {
+      playedEl.innerHTML = '<span style="color:#444;font-size:0.8rem;">Play cards from your hand…</span>';
+    } else {
+      playedThisTurn.forEach(card => {
+        const el = document.createElement('div');
+        el.className = 'played-mini';
+        el.textContent = `${card.emoji} ${card.name} ⚔${card.atk} 🛡${card.def}`;
+        playedEl.appendChild(el);
+      });
     }
 
-    document.getElementById("btn-draw").addEventListener("click", () => drawCard());
-    document.getElementById("btn-end").addEventListener("click", endTurn);
-    document.getElementById("btn-reset").addEventListener("click", init);
+    // Button states
+    document.getElementById('btn-draw').disabled   = gameOver || deck.length === 0 || hand.length >= 7;
+    document.getElementById('btn-attack').disabled = gameOver || playedThisTurn.length === 0;
+    document.getElementById('btn-end').disabled    = gameOver;
+  }
 
-    init();
+  // ── EVENTS ────────────────────────────────────────────
+  document.getElementById('btn-draw').addEventListener('click', () => drawCard());
+  document.getElementById('btn-attack').addEventListener('click', attackEnemy);
+  document.getElementById('btn-end').addEventListener('click', endTurn);
+  document.getElementById('btn-reset').addEventListener('click', () => { stage = 0; init(); });
+
+  init();
   </script>
 
 </body>
